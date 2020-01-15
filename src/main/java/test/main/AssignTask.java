@@ -26,7 +26,7 @@ import test.model.Employee;
 import test.model.Task;
 import test.model.Team;
 
-public class PopulateDb {
+public class AssignTask {
 
 
 	public static void main(String[] args) {
