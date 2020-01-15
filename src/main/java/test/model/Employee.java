@@ -1,10 +1,11 @@
-package task_manager.model;
+package test.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class Employee {
+public class Employee implements Serializable{
 
 	private int id;
 
