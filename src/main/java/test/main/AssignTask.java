@@ -87,6 +87,12 @@ public class AssignTask {
 					|| !assignTaskToTeam(task, employees, visitedTasks, oldAssignments)) {
 				System.out.println("Impossible to assign the task");
 			} else {
+				
+				System.out.println("Solution: ");
+				for(Task taskInSolution: visitedTasks) {
+					System.out.println(taskInSolution.getDescription()+" -> "+ taskInSolution.getEmployee().getUserName());
+				}
+				
 				System.out.println("New scheduling:");
 				printDays(start, daysMax);
 				for (Employee e : employees) {
