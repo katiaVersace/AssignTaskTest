@@ -1,0 +1,97 @@
+Tenterò di riassumere ciò che ho assimilato dopo aver visto il tutorial su generics, lambda e Method Reference, in modo che tu possa correggermi là dove mi sbaglio: 
+
+Innanzitutto un’espressione lambda è una funzione pura, ovvero il risultato dipende solo dagli input (non ha uno stato). L’uso più adatto delle Lambda è per la definizione di piccole funzioni che elaborano dei dati e inoltre ci permettono di considerare una funzione come un argomento di un metodo e passare dei “pezzi di codice”.
+
+Passando al mio codice, nella classe AssignTask.java del progetto AssignTask ho cercato di fare uso delle funzioni anonime in vari punti, ad esempio:
+
+Prima definivo questa funzione:
+
+orderByTasksNumberInPeriod(employees, task.getExpectedStartTime(), task.getExpectedEndTime());
+
+
+public void orderByTasksNumberInPeriod(List<Employee> employees, final LocalDate start,
+			final LocalDate end) {
+
+		
+		Collections.sort(employees, new Comparator<Employee>() {
+		public int compare(Employee e1, Employee e2) {
+				if (getTasksInPeriod(e1, start, end).size() == getTasksInPeriod(e2, start, end).size())
+					return 0;
+				return getTasksInPeriod(e1, start, end).size() < getTasksInPeriod(e2, start, end).size() ? -1 : 1;
+			}
+		});
+	}
+
+
+tutto questo è poi diventato:
+
+Collections.sort(employees, (e1 , e2) -> getTasksInPeriod(e1, task.getExpectedStartTime(), task.getExpectedEndTime()).size() - getTasksInPeriod(e2, task.getExpectedStartTime(), task.getExpectedEndTime()).size() );
+
+Un altro caso (i restanti sono simili a questo) in cui ho usato le lambda expressions è stato il seguente, per compattare un pò il codice:
+
+employees.forEach(e -> e.getTasks().forEach(t -> t.setEmployee(e)));
+
+che prima era un doppio for.
+
+Passando poi alle interfacce funzionali e Method Reference, quello che ho capito è che:
+
+le interfacce funzionali mi permettono di associare al loro unico metodo astratto diversi comportamenti  che lavorano sugli stessi dati e restituiscono lo stesso tipo di dato. Perciò se ho delle funzioni non molto corpose e che hanno stesso input e stesso output, posso avvalermi di questo stile di programmazione funzionale. Ad esempio se devo filtrare una lista di persone in base a diversi criteri (età, sesso, provenienza), posso usare un'interfaccia funzionale come nell'esempio:
+
+public interface Predicate < T > {
+    public boolean test(T t);
+}
+
+class MyClass {
+
+    boolean allFemale(Persona p) {
+        return p.getSesso().equals("F");
+    }
+
+    boolean allMale(Persona p) {
+        return .getSesso().equals("M");
+    }
+
+    boolean allForeigners(Persona p) {
+        return !p.getNazionalita().equals("italiana");
+    }
+
+
+}
+
+public static void main(String[] args) {
+
+    MyClass mc1 = new MyClass();
+    Predicate < Persona > mi = mc1::allFemale;
+
+    List < Persona > iscritti = Arrays.asList(
+        new Persona("Mario", "Rossi", "M", 35, "italiana"),
+        new Persona("Lucy", "Parker", "F", 22, "inglese"),
+        new Persona("Gianni", "Bianchi", "M", 20, "italiana"),
+        new Persona("Adele", "Fabi", "F", 20, "italiana")
+    );
+
+    List < Persona > donne = new ArrayList < Persona > ();
+    iscritti.foreach(p - > {
+        if (mi.test(p)) donne.add(p);
+    });
+
+    mi = mc1::allMale;
+
+    List < Persona > uomini = new ArrayList < Persona > ();
+    iscritti.foreach(p - > {
+        if (mi.test(p)) uomini.add(p);
+    });
+
+}
+
+Quindi ho usato sempre il  metodo test dell'istanza mi, eseguendo però due comportamenti diversi.
+
+Ora quello che volevo ragionare insieme a te, è il fatto che io ho provato a cercare un punto nel codice (mi riferisco solo al progetto AssignTask), in cui questa cosa mi tornasse utile. Quindi un punto in cui stavo usando compiendo delle diverse operazioni (anche se simili in input e output) sugli stessi dati. Ma non ci sono riuscita. Perciò volevo capire se tu riuscivi a farmi capire quali fossero questi punti dando un'occhiata al file AssignTask.java.
+
+
+
+
+
+ 
+
+

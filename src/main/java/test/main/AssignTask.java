@@ -29,26 +29,21 @@ import test.model.Team;
 public class AssignTask {
 
 
-	public static void main(String[] args) {
+	public static void main(String[] args)  {
 
 		// range visualized
-		LocalDate start = LocalDate.parse("2019-12-01");
-		LocalDate end = LocalDate.parse("2019-12-15");
+		LocalDate start = LocalDate.parse("2019-12-01"), end = LocalDate.parse("2019-12-15");
 
 		List<Employee> employees = randomMap(start, end);
 		List<Task> tasks = new ArrayList<Task>();
-		for (Employee e : employees) {
-			for (Task t : e.getTasks()) {
-				tasks.add(t);
-			}
-		}
+
+		employees.forEach(e -> {e.getTasks().forEach(t -> {tasks.add(t);});});
 
 		long daysMax = ChronoUnit.DAYS.between(start, end) + 1;
 		System.out.println("\nAvailability: ");
 		printDays(start, daysMax);
-		for (Employee employee : employees) {
-			printEmployeeScheduling(employee, daysMax, start, end);
-		}
+
+		employees.forEach(e ->printEmployeeScheduling(e, daysMax, start, end));
 		printFreeEmployees(start, end, daysMax, employees);
 
 		Scanner reader = new Scanner(System.in);// Reading from System.in
@@ -61,19 +56,15 @@ public class AssignTask {
 			int dayEnd = reader.nextInt();
 
 			String dayStartString = String.valueOf(dayStart);
-			if (dayStart < 10) {
-				dayStartString = "0" + String.valueOf(dayStart);
-			}
+			dayStartString = (dayStart < 10) ? "0" + String.valueOf(dayStart) : dayStartString;
 
 			String dayEndString = String.valueOf(dayEnd);
-			if (dayEnd < 10) {
-				dayEndString = "0" + String.valueOf(dayEnd);
-			}
+			dayEndString = (dayEnd < 10) ? "0" + String.valueOf(dayEnd) : dayEndString;
 
 			Task task = new Task("temp", LocalDate.parse("2019-12-" + dayStartString), null,
 					LocalDate.parse("2019-12-" + dayEndString), null);
 			task.setId(tasks.size() + 1);
-			task.setDescription(toString(tasks.size() + 1, 36));
+			task.setDescription(toString(task.getId(), 36));
 			System.out.println("Trying to add Task " + task.getDescription());
 			tasks.add(task);
 			
@@ -86,18 +77,14 @@ public class AssignTask {
 			if (checkNoSolution(task.getExpectedStartTime(), task.getExpectedEndTime(), employees)
 					|| !assignTaskToTeam(task, employees, visitedTasks, oldAssignments)) {
 				System.out.println("Impossible to assign the task");
-			} else {
+			}
+			else {
 				
 				System.out.println("Solution: ");
-				for(Task taskInSolution: visitedTasks) {
-					System.out.println(taskInSolution.getDescription()+" -> "+ taskInSolution.getEmployee().getUserName());
-				}
-				
+				visitedTasks.forEach(taskInSolution -> {System.out.println(taskInSolution.getDescription()+" -> "+ taskInSolution.getEmployee().getUserName());});
 				System.out.println("New scheduling:");
 				printDays(start, daysMax);
-				for (Employee e : employees) {
-					printEmployeeScheduling(e, daysMax, start, end);
-				}
+				employees.forEach(e -> {printEmployeeScheduling(e, daysMax, start, end);});
 				printFreeEmployees(start, end, daysMax, employees);
 
 			}
@@ -116,14 +103,11 @@ public class AssignTask {
 
 		// caso base positivo
 		for (Employee employee : team) {
-			if (employee != task.getEmployee()) {
-				if (employeeAvailable(employee, task.getExpectedStartTime(), task.getExpectedEndTime())) {
-
+			if (employee != task.getEmployee() && employeeAvailable(employee, task.getExpectedStartTime(), task.getExpectedEndTime())) {
 					assignTaskToEmployee(task, employee);
 					oldAssignments.put(task, oldEmployee);
 					return true;
 				}
-			}
 		}
 
 		// passo ricorsivo
@@ -151,41 +135,25 @@ public class AssignTask {
 					} else {
 						// tutti i branch hanno restituito true quindi faccio merge dei vecchi
 						// assegnamenti dei task in quei branch
-						for (HashMap.Entry<Task, Employee> entry : oldAssignmentsForBranch.entrySet()) {
-							oldAssignments.put(entry.getKey(), entry.getValue());
+						oldAssignmentsForBranch.entrySet().forEach(entry -> {oldAssignments.put(entry.getKey(), entry.getValue());});
 						}
-					}
-
 				}
+
 				if (atLeastOneFailed) {
-
-					if (oldEmployee != null) {
-						oldEmployee.getTasks().add(task);
-					}
-					employee.getTasks().remove(task);
-					task.setEmployee(oldEmployee);
-
+					assignTaskToEmployee(task,oldEmployee);
 					// ripristino i task dei branch che hanno restituito true
 					for (HashMap.Entry<Task, Employee> entry : oldAssignments.entrySet()) {
 						Task taskToRevert = entry.getKey();
-						taskToRevert.getEmployee().getTasks().remove(taskToRevert);
-						taskToRevert.setEmployee(entry.getValue());
-						entry.getValue().getTasks().add(taskToRevert);
+						assignTaskToEmployee(taskToRevert, entry.getValue());
 						visitedTasks.remove(taskToRevert);
 					}
 					oldAssignments.clear();
-
 				} else {
-
 					oldAssignments.put(task, oldEmployee);
 					return true;
-
 				}
-
 			}
-
 		}
-
 		visitedTasks.remove(task);
 		return false;
 	}
@@ -193,28 +161,29 @@ public class AssignTask {
 	public static void assignTaskToEmployee(Task task, Employee employee) {
 		if (task.getEmployee() != null) {
 			task.getEmployee().getTasks().remove(task);
+			if (task.getEmployee().getTasks().size() < 5) {
+				task.getEmployee().setTopEmployee(false);
+			}
 		}
 		employee.getTasks().add(task);
+		if (employee.getTasks().size() >= 5) {
+			employee.setTopEmployee(true);
+		}
 		task.setEmployee(employee);
 	}
 
 	private static boolean taskInProgress(Task taskToRearrange) {
 		LocalDate today = LocalDate.now();
-		if ((taskToRearrange.getExpectedStartTime().isBefore(today)
+		return (taskToRearrange.getExpectedStartTime().isBefore(today)
 				&& taskToRearrange.getExpectedEndTime().isAfter(today))
 				|| taskToRearrange.getExpectedStartTime().equals(today)
-				|| taskToRearrange.getExpectedEndTime().equals(today)) {
-			return true;
-		}
-
-		else {
-			return false;
-		}
+				|| taskToRearrange.getExpectedEndTime().equals(today);
 	}
 
 	private static List<Task> getTasksInPeriod(Employee employee, LocalDate start, LocalDate end) {
 		List<Task> tasksInPeriod = new ArrayList<Task>();
-		for (Task t : employee.getTasks()) {
+		employee.getTasks().forEach(t ->
+		{
 			if (betweenTwoDate(start, t.getExpectedStartTime(), t.getExpectedEndTime())
 					|| betweenTwoDate(end, t.getExpectedStartTime(), t.getExpectedEndTime())
 					|| betweenTwoDate(t.getExpectedStartTime(), start, end)
@@ -222,6 +191,7 @@ public class AssignTask {
 				tasksInPeriod.add(t);
 			}
 		}
+		);
 
 		return tasksInPeriod;
 	}
@@ -244,24 +214,17 @@ public class AssignTask {
 		Arrays.fill(schedule, "__");
 
 		for (Task task : employee.getTasks()) {
-			LocalDate taskStartDate = task.getExpectedStartTime();
-			LocalDate taskEndDate = task.getExpectedEndTime();
+			LocalDate taskStartDate = task.getExpectedStartTime(), taskEndDate = task.getExpectedEndTime();
 
-			// check on task start and end because a task can end over the end of the period
-			// specified or start before
-			if (taskStartDate.isBefore(start)) {
-				taskStartDate = start;
-			}
-			if (taskEndDate.isAfter(end)) {
-				taskEndDate = end;
-			}
+			// check on task start and end because a task can end over the end of the period specified or start before
+			taskStartDate = (taskStartDate.isBefore(start)) ? start : taskStartDate;
+			taskEndDate = (taskEndDate.isAfter(end)) ? end : taskEndDate;
 
-			long taskStart = ChronoUnit.DAYS.between(start, taskStartDate);
-			long taskDuration = ChronoUnit.DAYS.between(taskStartDate, taskEndDate) + 1;
+
+			long taskStart = ChronoUnit.DAYS.between(start, taskStartDate), taskDuration = ChronoUnit.DAYS.between(taskStartDate, taskEndDate) + 1;
 
 			String stringToPrint = toString(task.getId(), 36);
-			if (stringToPrint.length() < 2)
-				stringToPrint = "0" + stringToPrint;
+			stringToPrint = (stringToPrint.length() < 2) ? "0" + stringToPrint : stringToPrint;
 
 			for (int i = (int) taskStart; i < taskStart + taskDuration; i++) {
 				schedule[i] = stringToPrint;
@@ -279,8 +242,7 @@ public class AssignTask {
 		Collections.shuffle(employees);
 		for (Employee employee : employees) {
 			if (employeeAvailable(employee, task.getExpectedStartTime(), task.getExpectedEndTime())) {
-				task.setEmployee(employee);
-				employee.getTasks().add(task);
+				assignTaskToEmployee(task,employee);
 				return true;
 			}
 		}
@@ -289,8 +251,7 @@ public class AssignTask {
 			if (availability != null) {
 				task.setExpectedStartTime(availability);
 				task.setExpectedEndTime(availability);
-				task.setEmployee(employee);
-				employee.getTasks().add(task);
+				assignTaskToEmployee(task, employee);
 				return true;
 			}
 		}
@@ -312,15 +273,12 @@ public class AssignTask {
 	public static LocalDate between(LocalDate startInclusive, LocalDate endInclusive) {
 		Random rn = new Random();
 		long daysMax = (ChronoUnit.DAYS.between(startInclusive, endInclusive)) + 1;
-		int days = rn.nextInt((int) daysMax);
-		LocalDate randomDate = startInclusive.plusDays(days);
-		return randomDate;
+		return startInclusive.plusDays(rn.nextInt((int) daysMax));
 	}
 
 	public static boolean betweenTwoDate(LocalDate toCheck, LocalDate start, LocalDate end) {
-		boolean result = (toCheck.isAfter(start) && toCheck.isBefore(end)) || toCheck.equals(start)
+		return (toCheck.isAfter(start) && toCheck.isBefore(end)) || toCheck.equals(start)
 				|| toCheck.equals(end);
-		return result;
 	}
 
 	public static boolean employeeAvailable(Employee e, LocalDate startTask, LocalDate endTask) {
@@ -351,8 +309,7 @@ public class AssignTask {
 		return sb.toString();
 	}
 
-	public static String toString(int i, int radix) { // SORGENTE RICAVATO dal toString di java > Integer.toString(n,
-														// 16);
+	public static String toString(int i, int radix) { // SORGENTE RICAVATO dal toString di java > Integer.toString(n, 16);
 		String SYMBOLS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-";
 
 		char[] digits = SYMBOLS.toCharArray();
@@ -414,18 +371,8 @@ public class AssignTask {
 			e.printStackTrace();
 		}
 
-//		System.out.println("Mappa caricata:");
-		for (Employee e : employees) {
-//			System.out.println(e);
-			for (Task t : e.getTasks()) {
+		employees.forEach(e -> e.getTasks().forEach(t -> t.setEmployee(e)));
 
-				t.setEmployee(e);
-//			System.out.println(t);
-			}
-
-//			System.out.println();
-		}
-//		System.out.println();
 		return employees;
 	}
 
