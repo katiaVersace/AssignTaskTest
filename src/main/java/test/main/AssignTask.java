@@ -67,10 +67,11 @@ public class AssignTask {
 			task.setDescription(toString(task.getId(), 36));
 			System.out.println("Trying to add Task " + task.getDescription());
 			tasks.add(task);
-			
-			// order employees
-			orderByTasksNumberInPeriod(employees, task.getExpectedStartTime(), task.getExpectedEndTime());
+
 			saveToFile(employees);
+
+			// order employees
+			Collections.sort(employees, (e1 , e2) -> getTasksInPeriod(e1, task.getExpectedStartTime(), task.getExpectedEndTime()).size() - getTasksInPeriod(e2, task.getExpectedStartTime(), task.getExpectedEndTime()).size() );
 
 			List<Task> visitedTasks = new ArrayList<Task>();
 			HashMap<Task, Employee> oldAssignments = new HashMap<Task, Employee>();
@@ -196,17 +197,6 @@ public class AssignTask {
 		return tasksInPeriod;
 	}
 
-	public static void orderByTasksNumberInPeriod(List<Employee> employees, final LocalDate start,
-			final LocalDate end) {
-
-		Collections.sort(employees, new Comparator<Employee>() {
-			public int compare(Employee e1, Employee e2) {
-				if (getTasksInPeriod(e1, start, end).size() == getTasksInPeriod(e2, start, end).size())
-					return 0;
-				return getTasksInPeriod(e1, start, end).size() < getTasksInPeriod(e2, start, end).size() ? -1 : 1;
-			}
-		});
-	}
 
 	private static void printEmployeeScheduling(Employee employee, long scheduleSize, LocalDate start, LocalDate end) {
 
